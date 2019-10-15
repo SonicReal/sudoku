@@ -1,7 +1,54 @@
+module.exports = function solveSudoku(matrix) {
+    const sudoku = matrix;
+    const stack = []
+
+    const result = calculate(sudoku, stack);
+    return result;
+}
+
+function calculate(sudoku, stack) {
+    for (let i = 0; i < 9; i++) {
+        for (let j = 0; j < 9; j++) {
+            if (sudoku[i][j] !== 0) {
+                continue;
+            }
+            const last = stack[stack.length - 1];
+            let available;
+            if (last && last.i === i && last.j === j) {
+                available = [...last.available];
+            } else {
+                available = getSquareCandidates(sudoku, i, j).sort();
+                stack.push({i, j, available});
+            }
+
+            while (available.length > 0) {
+                if (canInsert(sudoku, i, j, available[available.length-1])) {
+                    sudoku[i][j] = available[available.length-1];
+                    break;
+                } else {
+                    available.pop();
+                }
+            }
+            if (sudoku[i][j] === 0) {
+                stack.pop();
+                const last = stack[stack.length - 1];
+                sudoku[last.i][last.j] = 0;
+                last.available.pop();
+                i = last.i;
+                j = last.j - 1;
+            } else {
+                // easyCheck(sudoku, stack);
+                // console.log(stack);
+            }
+        }
+    }
+    return sudoku;
+}
+
+
 function canInsert(sudoku, i, j, number) {
     const is_free_row = isFreeInRow(sudoku, i, number);
     const is_free_column = isFreeInColumn(sudoku, j, number);
-
     return is_free_column && is_free_row;
 }
 
@@ -23,25 +70,28 @@ function isFreeInColumn(sudoku, j, number) {
     return true;
 }
 
-function easyCheck(sudoku) {
+function easyCheck(sudoku, stack) {
     for (let i = 0; i < 9; i++) {
         const row = sudoku[i];
         for (let j = 0; j < 9; j++) {
             if (row[j] === 0) {
-                trySolvePosition(sudoku, i, j);
+                trySolvePosition(sudoku, i, j, stack);
             }
         }
     }
 }
 
-function trySolvePosition(sudoku, i, j) {
+function trySolvePosition(sudoku, i, j, stack) {
 
-    let success = false;
-    success = checkLastInRow(sudoku, i, j);
+
+    let success = checkLastInRow(sudoku, i, j);
     if (success) {
-        return;
+        stack.push({i, j, available: [sudoku[i][j]]})
     }
     success = checkLastInSquare(sudoku, i, j);
+    if (success) {
+        stack.push({i, j, available: [sudoku[i][j]]})
+    }
 }
 
 function checkLastInRow(sudoku, i, j) {
@@ -92,52 +142,4 @@ function getSquareCandidates(sudoku, i, j) {
 
 function get10() {
     return [1, 2, 3, 4, 5, 6, 7, 8, 9];
-}
-
-
-module.exports = function solveSudoku(matrix) {
-    const sudoku = matrix;
-    easyCheck(sudoku);
-    const stack = []
-    for (let i = 0; i < 9; i++) {
-        for (let j = 0; j < 9; j++) {
-            if (sudoku[i][j] !== 0) {
-                continue;
-            }
-            const last = stack[stack.length - 1];
-            let available;
-            if (last && last.i === i && last.j === j) {
-                available = [...last.available];
-            } else {
-                available = getSquareCandidates(sudoku, i, j).sort();
-                stack.push({i, j, available});
-            }
-
-            while (available.length > 0) {
-                if (canInsert(sudoku, i, j, available[0])) {
-                    sudoku[i][j] = available[0];
-                    break;
-                } else {
-                    available.shift();
-                    // console.log("available", available);
-                }
-            }
-            if (sudoku[i][j] === 0) {
-                // console.log('no candidates', available);
-                // console.log(stack);
-                stack.pop();
-                const last = stack[stack.length - 1];
-                sudoku[last.i][last.j] = 0;
-                last.available.shift();
-                i = last.i;
-                j = last.j - 1;
-                // console.log('S--------')
-            }
-            // console.log(sudoku)
-            // console.log('---------')
-
-        }
-    }
-    return sudoku;
-
 }

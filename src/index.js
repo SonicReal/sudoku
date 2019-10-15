@@ -24,6 +24,7 @@ function calculate(sudoku, stack) {
             while (available.length > 0) {
                 if (canInsert(sudoku, i, j, available[available.length-1])) {
                     sudoku[i][j] = available[available.length-1];
+
                     break;
                 } else {
                     available.pop();
@@ -32,8 +33,8 @@ function calculate(sudoku, stack) {
             if (sudoku[i][j] === 0) {
                 stack.pop();
                 const last = stack[stack.length - 1];
+                last.available.splice(last.available.indexOf(sudoku[last.i][last.j]));
                 sudoku[last.i][last.j] = 0;
-                last.available.pop();
                 i = last.i;
                 j = last.j - 1;
             } else {

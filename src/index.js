@@ -33,7 +33,7 @@ function calculate(sudoku, stack) {
             if (sudoku[i][j] === 0) {
                 stack.pop();
                 const last = stack[stack.length - 1];
-                last.available.splice(last.available.indexOf(sudoku[last.i][last.j]));
+                last.available.splice(last.available.indexOf(sudoku[last.i][last.j]),1);
                 sudoku[last.i][last.j] = 0;
                 i = last.i;
                 j = last.j - 1;

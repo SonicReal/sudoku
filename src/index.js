@@ -1,18 +1,29 @@
-const sudok = [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [6, 7, 2, 1, 9, 5, 3, 4, 8],
-    [1, 9, 8, 3, 4, 2, 5, 6, 7],
-    [8, 5, 9, 7, 6, 1, 4, 2, 3],
-    [4, 2, 6, 8, 5, 3, 7, 9, 1],
-    [7, 1, 3, 9, 2, 4, 8, 5, 6],
-    [9, 6, 1, 5, 3, 7, 2, 8, 4],
-    [2, 8, 7, 4, 1, 9, 6, 3, 5],
-    [3, 4, 5, 2, 8, 6, 1, 7, 9]
-];
+function canInsert(sudoku, i, j, number) {
+    const is_free_row = isFreeInRow(sudoku, i, number);
+    const is_free_column = isFreeInColumn(sudoku, j, number);
 
-solve(sudok);
+    return is_free_column && is_free_row;
+}
 
-function solve(sudoku) {
+function isFreeInRow(sudoku, i, number) {
+    for (let k = 0; k < 9; k++) {
+        if (sudoku[i][k] === number) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function isFreeInColumn(sudoku, j, number) {
+    for (let k = 0; k < 9; k++) {
+        if (sudoku[k][j] === number) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function easyCheck(sudoku) {
     for (let i = 0; i < 9; i++) {
         const row = sudoku[i];
         for (let j = 0; j < 9; j++) {
@@ -21,41 +32,30 @@ function solve(sudoku) {
             }
         }
     }
-    console.log(sudoku);
 }
 
 function trySolvePosition(sudoku, i, j) {
 
-    const offset_x = Math.floor((i) / 3) * 3;
-    const offset_y = Math.floor((j) / 3) * 3;
     let success = false;
     success = checkLastInRow(sudoku, i, j);
     if (success) {
         return;
     }
-    success = checkLastInSquare(sudoku, i, j, offset_x, offset_y);
+    success = checkLastInSquare(sudoku, i, j);
 }
 
 function checkLastInRow(sudoku, i, j) {
     const row_candidates = get10();
     const column_candidates = get10();
-    const diagonal_candidates = get10();
-    const diagonal2_candidates = get10();
     for (let k = 0; k < 9; k++) {
         if (row_candidates.includes(sudoku[i][k])) {
             row_candidates.splice(row_candidates.indexOf(sudoku[i][k]), 1);
         }
-
         if (column_candidates.includes(sudoku[k][j])) {
             column_candidates.splice(column_candidates.indexOf(sudoku[k][j]), 1);
         }
-        if ((i === j) && diagonal_candidates.includes(sudoku[k][k])) {
-            diagonal_candidates.splice(diagonal_candidates.indexOf(sudoku[k][k]), 1);
-        }
-        if ((j === (8 - i)) && diagonal2_candidates.includes(sudoku[k][8 - k])) {
-            diagonal2_candidates.splice(diagonal2_candidates.indexOf(sudoku[k][8 - k]), 1);
-        }
     }
+
     if (row_candidates.length === 1) {
         sudoku[i][j] = row_candidates[0];
         return true;
@@ -64,35 +64,30 @@ function checkLastInRow(sudoku, i, j) {
         sudoku[i][j] = column_candidates[0];
         return true;
     }
-    if (diagonal_candidates.length === 1) {
-        sudoku[i][j] = diagonal_candidates[0];
-        return true;
-    }
-    if (diagonal2_candidates.length === 1) {
-        sudoku[i][j] = diagonal2_candidates[0];
-        return true;
-    }
     return false;
 }
 
-function checkLastInSquare(sudoku, i, j, offset_x, offset_y) {
-    const square_candidates = get10();
-    console.log('offsetx:' + offset_x)
-    console.log('offsety:' + offset_y)
-    for (let a = offset_x; a < offset_x + 3; a++) {
-        for (let b = offset_y; b < offset_y + 3; b++) {
-            console.log(sudoku[a][b])
-            if (square_candidates.includes(sudoku[a][b])) {
-                square_candidates.splice(square_candidates.indexOf(sudoku[a][b]), 1);
-            }
-        }
-    }
-    console.log(square_candidates);
+function checkLastInSquare(sudoku, i, j) {
+    const square_candidates = getSquareCandidates(sudoku, i, j)
     if (square_candidates.length === 1) {
         sudoku[i][j] = square_candidates[0];
         return true;
     }
     return false;
+}
+
+function getSquareCandidates(sudoku, i, j) {
+    const offset_x = Math.floor((i) / 3) * 3;
+    const offset_y = Math.floor((j) / 3) * 3;
+    const square_candidates = get10();
+    for (let a = offset_x; a < offset_x + 3; a++) {
+        for (let b = offset_y; b < offset_y + 3; b++) {
+            if (square_candidates.includes(sudoku[a][b])) {
+                square_candidates.splice(square_candidates.indexOf(sudoku[a][b]), 1);
+            }
+        }
+    }
+    return square_candidates;
 }
 
 function get10() {
@@ -101,6 +96,48 @@ function get10() {
 
 
 module.exports = function solveSudoku(matrix) {
+    const sudoku = matrix;
+    easyCheck(sudoku);
+    const stack = []
+    for (let i = 0; i < 9; i++) {
+        for (let j = 0; j < 9; j++) {
+            if (sudoku[i][j] !== 0) {
+                continue;
+            }
+            const last = stack[stack.length - 1];
+            let available;
+            if (last && last.i === i && last.j === j) {
+                available = [...last.available];
+            } else {
+                available = getSquareCandidates(sudoku, i, j).sort();
+                stack.push({i, j, available});
+            }
 
+            while (available.length > 0) {
+                if (canInsert(sudoku, i, j, available[0])) {
+                    sudoku[i][j] = available[0];
+                    break;
+                } else {
+                    available.shift();
+                    // console.log("available", available);
+                }
+            }
+            if (sudoku[i][j] === 0) {
+                // console.log('no candidates', available);
+                // console.log(stack);
+                stack.pop();
+                const last = stack[stack.length - 1];
+                sudoku[last.i][last.j] = 0;
+                last.available.shift();
+                i = last.i;
+                j = last.j - 1;
+                // console.log('S--------')
+            }
+            // console.log(sudoku)
+            // console.log('---------')
+
+        }
+    }
+    return sudoku;
 
 }
